@@ -31,7 +31,7 @@ module HandKeys
             # does this suit have a mapping? 
             foundIndex = findfirst(x -> x == card[2], seenSuits)
             # if not, map it
-            if foundIndex == nothing
+            if foundIndex === nothing
                 push!(seenSuits, card[2])
                 foundIndex = length(seenSuits)
             end

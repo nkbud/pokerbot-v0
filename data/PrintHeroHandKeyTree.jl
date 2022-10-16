@@ -1,20 +1,31 @@
-include("lib/HandKeys.jl")
-
 using JSON
 using Dates
-using .HandKeys
 import Base.Threads.@spawn
 
+include("lib/HandKeys.jl")
+include("lib/Cards.jl")
+include("lib/ResultKeys.jl")
+using .ResultKeys
+using .HandKeys
+using .Cards
+
 function countHeroTree2Json(heroCards::String, allCards::Vector{String}, skip::Vector{Bool})
-    
+
+  river2Result = Dict{String, String}()
   counts = Dict{String,  Dict{String, Dict{String, Int32}}}()
 
+  remainingCards = filter(x -> ! skip[x], 1:52)
+  numRemainingCards = length(remainingCards)
+  if numRemainingCards != 50
+    print("ERROR: $numRemainingCards")
+  end
+
   # flop
-  for c in filter(x -> ! skip[x], 1:48)
+  for c in remainingCards[begin:(end-4)]
       cs = allCards[c]
-      for d in filter(x -> ! skip[x], (c+1):49)
+      for d in remainingCards[(c+1):(end-3)]
           ds = allCards[d]
-          for e in filter(x -> ! skip[x], (d+1):50)
+          for e in remainingCards[(d+1):(end-2)]
               es = allCards[e]
               flopCards = heroCards * " $cs $ds $es"
               flopKey = input2HandKey(flopCards)
@@ -24,7 +35,7 @@ function countHeroTree2Json(heroCards::String, allCards::Vector{String}, skip::V
               countsFlop = counts[flopKey] 
 
               # turn
-              for f in filter(x -> ! skip[x], (e+1):51)
+              for f in remainingCards[(e+1):(end-1)]
                   fs = allCards[f]
                   turnCards = flopCards * " $fs"
                   turnKey = input2HandKey(turnCards)
@@ -34,12 +45,14 @@ function countHeroTree2Json(heroCards::String, allCards::Vector{String}, skip::V
                   countsTurn = countsFlop[turnKey] 
 
                   # river
-                  for g in filter(x -> ! skip[x], (f+1):52)
+                  for g in remainingCards[(f+1):end]
                       gs = allCards[g]
-                      riverCards = flopCards * " $gs"
+                      riverCards = turnCards * " $gs"
                       riverKey = input2HandKey(riverCards)
                       if ! haskey(countsTurn, riverKey)
                           countsTurn[riverKey] = 1
+                          resultKey = findResultKey(riverKey)
+                          river2Result[riverKey] = resultKey
                       else
                           countsTurn[riverKey] += 1
                       end
@@ -50,8 +63,13 @@ function countHeroTree2Json(heroCards::String, allCards::Vector{String}, skip::V
   end
   countsJson = JSON.json(counts)
   heroCardsFilename = join(split(heroCards), "_")
-  open("heroCards/$heroCardsFilename.json", "w") do io
+  open("./archive/heroCards/$heroCardsFilename.json", "w") do io
       write(io, countsJson)
+  end
+
+  river2ResultJson = JSON.json(river2Result)
+  open("./archive/heroResults/$heroCardsFilename.json", "w") do io
+      write(io, river2ResultJson)
   end
 end
 
@@ -68,46 +86,41 @@ function getAllDeals()
   return allDeals
 end
 
-function log(count::Int64, total::Int64, stamp::DateTime)
+function log(count::Int64, total::Int64, start::Int64)
   threadid = Threads.threadid()
   remaining = total - count
-  durationMillis = Dates.now() - stamp
-  remainingMillis = remaining * durationMillis
-  durationTime = Dates.canonicalize(Dates.CompoundPeriod(durationMillis))
-  remainingTime = Dates.canonicalize(Dates.CompoundPeriod(remainingMillis))
-  println("# $threadid\t$count / $total\t$durationTime\tEst. $remainingTime remaining")
+  durationMillis = Dates.value(Dates.now()) - start
+  avgMillis = durationMillis / count
+  remainingMillis = round(remaining * avgMillis)
+  avgSeconds = round(avgMillis / 1000; digits = 1)
+  remainingTime = Dates.canonicalize(Dates.CompoundPeriod(Dates.Millisecond(remainingMillis)))
+  println("# $threadid\t$count / $total\tAvg: $avgSeconds seconds\tEst. $remainingTime remaining")
 end
 
 
 function execute()
 
-  allDeals = getAllDeals()
-  allCards = getFullDeck()
-  skip = map(card -> false, allCards)
-  total = length(allDeals)
-  count = 0
-  stamp = Dates.now()
+  global allDeals = getAllDeals()
+  global allCards = getFullDeck()
+  global total = length(allDeals)
+  global count = 0
+  global stamp = Dates.value(Dates.now())
 
   Threads.@threads for i = 1:(length(allDeals))
+    local threadid = Threads.threadid()
+    local x = Threads.threadid()
 
-    deal = allDeals[i]
-    cards = join(split(deal)[3:4], " ")
-    indices = map(x -> parse(Int32, x), split(deal)[1:2])
-    skip[indices[1]] = true
-    skip[indices[2]] = true
+    local deal = allDeals[i]
+    local cards = join(split(deal)[3:4], " ")
+    local indices = map(x -> parse(Int32, x), split(deal)[1:2])
+    local skip = map(card -> false, allCards)
+    local skip[indices[1]] = true
+    local skip[indices[2]] = true
 
-  
-    threadid = Threads.threadid()
-    x = Threads.threadid()
-
-    count += 1
+    global count += 1
     log(count, total, stamp)
-    stamp = Dates.now()
 
     countHeroTree2Json(cards, allCards, skip)
-
-    skip[indices[1]] = false
-    skip[indices[2]] = false
   end
 end
 
