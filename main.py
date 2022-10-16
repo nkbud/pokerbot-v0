@@ -9,10 +9,6 @@ if __name__ == "__main__":
     pass
 
     # toodo
-    # 1. identify player cards
-    # 2. identify community cards
-
-    # toodo
     # 3. be able to work with 2 screens
 
     # toodo

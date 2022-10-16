@@ -5,17 +5,18 @@ import time
 import numpy as np
 import cv2 as cv
 
-from src.utils.Screenshot import Screenshot
+from utils.Screenshot import Screenshot
 
-from .utils.process_image import process_image
 
 def collect_screenshot_bounding_rects():
     current_card = 0
     screenshot_count = 100
     sleep_seconds = 9
-    for i in range(screenshot_count):
+    for count in range(screenshot_count):
         screenshot = Screenshot()
         contours = cv.findContours(screenshot.gray, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)[0]
+        if len(contours) == 0:
+            continue
         bounds = [cv.boundingRect(contour) for contour in contours]
         
         xs = [bound[0] for bound in bounds]
@@ -28,8 +29,8 @@ def collect_screenshot_bounding_rects():
         scores = []
         for i in range(len(contours)):
             taller_than_wide = 1 < ratios[i] < 1.6
-            not_too_tall = hs[i] / float(screenshot.h) < 0.05
-            not_too_wide = ws[i] / float(screenshot.w) < 0.03
+            not_too_tall = hs[i] / float(screenshot.h) < 0.08
+            not_too_wide = ws[i] / float(screenshot.w) < 0.05
             is_card_like = taller_than_wide and not_too_tall and not_too_wide
             if is_card_like:
                 scores.append(hs[i])
@@ -44,7 +45,12 @@ def collect_screenshot_bounding_rects():
         for i in range(len(contours)):
             if scores_scaled[i] >= threshold:
                 found_box = screenshot.gray[ys[i]:(ys[i]+hs[i]), xs[i]:(xs[i]+ws[i])]
+                print(f"Found card # {current_card}" )
                 cv.imwrite(f"./outputs/collect/{current_card}.png", found_box)
+                current_card += 1
+
+        print(f"Round  # {count} of {screenshot_count}")
+        time.sleep(sleep_seconds)
 
 
 def pad(img, pad_h, pad_w):

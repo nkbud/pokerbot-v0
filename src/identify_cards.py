@@ -1,12 +1,21 @@
+from datetime import datetime
 import os
 
 import cv2 as cv
 import numpy as np
 
-from .utils.Screenshot import Screenshot
+from utils.Screenshot import Screenshot
+from enum import Enum
+
+
+class Owner(Enum):
+        Hero = 1
+        Community = 2
+        Villain = 3
 
 
 class Card:
+
     def __init__(self, kind, suit, x, y, h, w):
         self.kind = kind
         self.suit = suit
@@ -14,6 +23,26 @@ class Card:
         self.y = y
         self.h = h
         self.w = w
+        self.owner = self.determineOwner()
+    
+    def printFound(self):
+        print(f"{self.kind}{self.suit} : ( {self.x}, {self.y} ) = {self.owner.name}")
+
+    
+    def determineOwner(self):
+        if self.y > 640: return Owner.Hero
+        if 350 < self.y < 375: return Owner.Community
+        return Owner.Villain
+
+
+class Hand:
+    def __init__(self, cards: list[Card]):
+        self.hero = [f"{card.kind}{card.suit}" for card in cards if card.owner == Owner.Hero]
+        self.community = [f"{card.kind}{card.suit}" for card in cards if card.owner == Owner.Community]
+
+    def getHandString(self):
+        return f"{''.join(self.hero)}{''.join(self.community)}"
+
 
 
 class CardFinder:
@@ -37,10 +66,15 @@ class CardFinder:
     def cards(self, screen: Screenshot) -> list[Card]:
         cards = []
 
-        for kind, needle in self.kind2gray:
+        for kind, needle in self.kind2gray.items():
             # search for the kind-matched templates on the screen
             matches = cv.matchTemplate(screen.gray, needle, cv.TM_SQDIFF_NORMED)
-            loc = np.where(matches <= 0.05)
+            mixMax = cv.minMaxLoc(matches)
+            loc = np.where(matches <= 0.07)
+            if len(loc[0]) == 0:
+                continue
+
+            # print(mixMax)
 
             # reduce duplicate matches by quantizing the grid to reduce possibility of crowding
             h, w = needle.shape[0:2]
@@ -68,14 +102,15 @@ class CardFinder:
                 winner = np.argmax(countMatches)
                 suit = self.suits[winner]
                 # save the card
-                cards.append(
-                    Card(kind, suit, x, y, h, w)
-                )
+                card = Card(kind, suit, x, y, h, w)
+                # card.printFound()
+                cards.append(card)
+                
         return cards
 
 
 if __name__ == "__main__":
-    screen = Screenshot()
     find = CardFinder()
-    cards = find.cards(screen=screen)
-
+    while True:
+        cards = find.cards(screen=Screenshot())
+        print(f"{datetime.now().strftime('%H:%M:%S')} {Hand(cards).getHandString()}")
