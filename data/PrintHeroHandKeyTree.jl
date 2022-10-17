@@ -12,25 +12,19 @@ using .HandKeys
 using .Cards
 using .Logs
 
-function countHeroTree2Json(heroCards::String, allCards::Vector{String}, skip::Vector{Bool})
+function countHeroTree2Json(heroCards::String, allCards::Vector{String}, remainingIndices::Vector{Int32})
 
-  river2Result = Dict{String, String}()
-  counts = Dict{String,  Dict{String, Dict{String, Int32}}}()
-
-  remainingCards = filter(x -> ! skip[x], 1:52)
-  numRemainingCards = length(remainingCards)
-  if numRemainingCards != 50
-    print("ERROR: $numRemainingCards")
-  end
+  local river2Result = Dict{String, String}()
+  local counts = Dict{String,  Dict{String, Dict{String, Int32}}}()
 
   # flop
-  for c in remainingCards[begin:(end-4)]
-      cs = allCards[c]
-      for d in remainingCards[(c+1):(end-3)]
-          ds = allCards[d]
-          for e in remainingCards[(d+1):(end-2)]
-              es = allCards[e]
-              flopCards = heroCards * " $cs $ds $es"
+  for c in remainingIndices[begin:(end-4)]
+      # cs = allCards[c]
+      for d in remainingIndices[(c+1):(end-3)]
+          # ds = allCards[d]
+          for e in remainingIndices[(d+1):(end-2)]
+              # es = allCards[e]
+              flopCards = heroCards * " $(allCards[c]) $(allCards[d]) $(allCards[e])"
               flopKey = input2HandKey(flopCards)
               if ! haskey(counts, flopKey)
                   counts[flopKey] = Dict{String, Int32}()
@@ -38,9 +32,9 @@ function countHeroTree2Json(heroCards::String, allCards::Vector{String}, skip::V
               countsFlop = counts[flopKey] 
 
               # turn
-              for f in remainingCards[(e+1):(end-1)]
-                  fs = allCards[f]
-                  turnCards = flopCards * " $fs"
+              for f in remainingIndices[(e+1):(end-1)]
+                  # fs = allCards[f]
+                  turnCards = flopCards * " $(allCards[f])"
                   turnKey = input2HandKey(turnCards)
                   if ! haskey(countsFlop, turnKey)
                       countsFlop[turnKey] = Dict{String, Int32}()
@@ -48,10 +42,10 @@ function countHeroTree2Json(heroCards::String, allCards::Vector{String}, skip::V
                   countsTurn = countsFlop[turnKey] 
 
                   # river
-                  for g in remainingCards[(f+1):end]
-                      gs = allCards[g]
-                      riverCards = turnCards * " $gs"
-                      riverKey = input2HandKey(riverCards)
+                  for g in remainingIndices[(f+1):end]
+                      # gs = allCards[g]
+                      # riverCards = turnCards * " $(allCards[g])"
+                      riverKey = input2HandKey(turnCards * " $(allCards[g])")
                       if ! haskey(countsTurn, riverKey)
                           countsTurn[riverKey] = 1
                           resultKey = findResultKey(riverKey)
@@ -64,16 +58,15 @@ function countHeroTree2Json(heroCards::String, allCards::Vector{String}, skip::V
           end
       end
   end
-  countsJson = JSON.json(counts)
+
   heroCardsFilename = join(split(heroCards), "_")
   open("./archive/heroCards/$heroCardsFilename.json", "w") do io
-      write(io, countsJson)
+      write(io, JSON.json(counts))
+  end
+  open("./archive/heroResults/$heroCardsFilename.json", "w") do io
+      write(io, JSON.json(river2Result))
   end
 
-  river2ResultJson = JSON.json(river2Result)
-  open("./archive/heroResults/$heroCardsFilename.json", "w") do io
-      write(io, river2ResultJson)
-  end
 end
 
 function getAllDeals()
@@ -89,28 +82,45 @@ function getAllDeals()
   return allDeals
 end
 
-function execute()
+function log(count::Int64, total::Int64, start::Int64)
+  threadid = Threads.threadid()
+  remaining = total - count
+  durationMillis = Dates.value(Dates.now()) - start
+  avgMillis = durationMillis / count
+  remainingMillis = round(remaining * avgMillis)
+  avgSeconds = round(avgMillis / 1000; digits = 1)
+  remainingTime = Dates.canonicalize(Dates.CompoundPeriod(Dates.Millisecond(remainingMillis)))
+  println("# $threadid\t$count / $total\tAvg: $avgSeconds seconds\tEst. $remainingTime remaining")
+end
 
+function parseDeal(deal::String)::Tuple{String, Vector{Int32}}
+    heroCards = join(split(deal)[3:4], " ")
+    indices = map(x -> parse(Int32, x), split(deal)[1:2])
+    skip = falses(52)
+    skip[indices[1]] = true
+    skip[indices[2]] = true
+    remainingIndices = filter(x -> ! skip[x], 1:52)
+    if length(remainingIndices) != 50
+        print("ERROR: Number of skips is wrong. $skip")
+    end
+    return heroCards, remainingIndices
+end
+
+function execute()
+  
   global allDeals = getAllDeals()
   global allCards = getFullDeck()
-  global total = length(allDeals)
+  global total = length(getAllDeals())
   global count = 0
   global stamp = Dates.value(Dates.now())
 
-  Threads.@threads for i = 1:(length(allDeals))
-    local threadid = Threads.threadid()
+  Threads.@threads for i = 1:total
 
-    local deal = allDeals[i]
-    local cards = join(split(deal)[3:4], " ")
-    local indices = map(x -> parse(Int32, x), split(deal)[1:2])
-    local skip = map(card -> false, allCards)
-    local skip[indices[1]] = true
-    local skip[indices[2]] = true
+    local heroCards, remainingIndices = parseDeal(allDeals[i])
+    @time countHeroTree2Json(heroCards, copy(allCards), remainingIndices)
 
     global count += 1
     log(count, total, stamp)
-
-    countHeroTree2Json(cards, allCards, skip)
   end
 end
 
