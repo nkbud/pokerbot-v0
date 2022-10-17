@@ -1,16 +1,15 @@
-
 module Logs
 
-    using Dates
     export log
 
-    function log(count::Int64, total::Int64, start::DateTime)
-        threadid = Threads.threadid()
-        totalTimeSoFar = Dates.now() - start
-        avgTimePerCount = Dates.value(totalTimeSoFar) / count
-        remainingCount = total - count
-        estimatedTimeRemaining = remainingCount * avgTimePerCount
-        println("# $threadid\t$count / $total\tEst Avg: $(avgTimePerCount / 1000) sec\tEst Remaining: $(estimatedTimeRemaining / 60000) min")
+    function log(count::Int64, total::Int64, start::Int64)
+      threadid = Threads.threadid()
+      remaining = total - count
+      durationMillis = Dates.value(Dates.now()) - start
+      avgMillis = durationMillis / count
+      remainingMillis = round(remaining * avgMillis)
+      avgSeconds = round(avgMillis / 1000; digits = 1)
+      remainingTime = Dates.canonicalize(Dates.CompoundPeriod(Dates.Millisecond(remainingMillis)))
+      println("# $threadid\t$count / $total\tAvg: $avgSeconds seconds\tEst. $remainingTime remaining")
     end
-
 end

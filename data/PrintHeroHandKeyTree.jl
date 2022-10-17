@@ -5,9 +5,12 @@ import Base.Threads.@spawn
 include("lib/HandKeys.jl")
 include("lib/Cards.jl")
 include("lib/ResultKeys.jl")
+include("lib/Logs.jl")
+
 using .ResultKeys
 using .HandKeys
 using .Cards
+using .Logs
 
 function countHeroTree2Json(heroCards::String, allCards::Vector{String}, skip::Vector{Bool})
 
@@ -86,18 +89,6 @@ function getAllDeals()
   return allDeals
 end
 
-function log(count::Int64, total::Int64, start::Int64)
-  threadid = Threads.threadid()
-  remaining = total - count
-  durationMillis = Dates.value(Dates.now()) - start
-  avgMillis = durationMillis / count
-  remainingMillis = round(remaining * avgMillis)
-  avgSeconds = round(avgMillis / 1000; digits = 1)
-  remainingTime = Dates.canonicalize(Dates.CompoundPeriod(Dates.Millisecond(remainingMillis)))
-  println("# $threadid\t$count / $total\tAvg: $avgSeconds seconds\tEst. $remainingTime remaining")
-end
-
-
 function execute()
 
   global allDeals = getAllDeals()
@@ -108,7 +99,6 @@ function execute()
 
   Threads.@threads for i = 1:(length(allDeals))
     local threadid = Threads.threadid()
-    local x = Threads.threadid()
 
     local deal = allDeals[i]
     local cards = join(split(deal)[3:4], " ")
