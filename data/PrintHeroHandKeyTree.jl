@@ -14,59 +14,57 @@ using .Logs
 
 function countHeroTree2Json(heroCards::String, allCards::Vector{String}, remainingIndices::Vector{Int32})
 
-  local river2Result = Dict{String, String}()
-  local counts = Dict{String,  Dict{String, Dict{String, Int32}}}()
+    local river2Result = Dict{String, String}()
+    local counts = Dict{String,  Dict{String, Dict{String, Int32}}}()
 
-  # flop
-  for c in remainingIndices[begin:(end-4)]
-      # cs = allCards[c]
-      for d in remainingIndices[(c+1):(end-3)]
-          # ds = allCards[d]
-          for e in remainingIndices[(d+1):(end-2)]
-              # es = allCards[e]
-              flopCards = heroCards * " $(allCards[c]) $(allCards[d]) $(allCards[e])"
-              flopKey = input2HandKey(flopCards)
-              if ! haskey(counts, flopKey)
-                  counts[flopKey] = Dict{String, Int32}()
-              end
-              countsFlop = counts[flopKey] 
-
-              # turn
-              for f in remainingIndices[(e+1):(end-1)]
-                  # fs = allCards[f]
-                  turnCards = flopCards * " $(allCards[f])"
-                  turnKey = input2HandKey(turnCards)
-                  if ! haskey(countsFlop, turnKey)
-                      countsFlop[turnKey] = Dict{String, Int32}()
-                  end
-                  countsTurn = countsFlop[turnKey] 
-
-                  # river
-                  for g in remainingIndices[(f+1):end]
-                      # gs = allCards[g]
-                      # riverCards = turnCards * " $(allCards[g])"
-                      riverKey = input2HandKey(turnCards * " $(allCards[g])")
-                      if ! haskey(countsTurn, riverKey)
-                          countsTurn[riverKey] = 1
-                          resultKey = findResultKey(riverKey)
-                          river2Result[riverKey] = resultKey
-                      else
-                          countsTurn[riverKey] += 1
-                      end
-                  end
-              end
-          end
-      end
-  end
-
-  heroCardsFilename = join(split(heroCards), "_")
-  open("./archive/heroCards/$heroCardsFilename.json", "w") do io
-      write(io, JSON.json(counts))
-  end
-  open("./archive/heroResults/$heroCardsFilename.json", "w") do io
-      write(io, JSON.json(river2Result))
-  end
-
+    # flop
+    for c in 1:46
+        cs = allCards[remainingIndices[c]]
+        for d in (c+1):47
+            ds = allCards[remainingIndices[d]]
+            for e in (d+1):48
+                es = allCards[remainingIndices[e]]
+                flopCards = "$heroCards $cs $ds $es"
+                flopKey = input2HandKey(flopCards)
+                if ! haskey(counts, flopKey)
+                    counts[flopKey] = Dict{String, Int32}()
+                end
+                countsFlop = counts[flopKey] 
+  
+                # turn
+                for f in (e+1):49
+                    fs = allCards[remainingIndices[f]]
+                    turnCards = "$flopCards $fs"
+                    turnKey = input2HandKey(turnCards)
+                    if ! haskey(countsFlop, turnKey)
+                        countsFlop[turnKey] = Dict{String, Int32}()
+                    end
+                    countsTurn = countsFlop[turnKey] 
+  
+                    # river
+                    for g in (f+1):50
+                        gs = allCards[remainingIndices[g]]
+                        riverKey = input2HandKey("$turnCards $gs")
+                        if ! haskey(countsTurn, riverKey)
+                            countsTurn[riverKey] = 1
+                            river2Result[riverKey] = findResultKey(riverKey)
+                        else
+                            countsTurn[riverKey] += 1
+                        end
+                    end
+                end
+            end
+        end
+    end
+  
+    heroCardsFilename = join(split(heroCards), "_")
+    open("./archive/heroCards/$heroCardsFilename.json", "w") do io
+        write(io, JSON.json(counts))
+    end
+    open("./archive/heroResults/$heroCardsFilename.json", "w") do io
+        write(io, JSON.json(river2Result))
+    end
+  
 end
 
 function getAllDeals()

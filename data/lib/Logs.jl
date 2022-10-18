@@ -1,6 +1,7 @@
 module Logs
 
     export log
+    using Dates
 
     function log(count::Int64, total::Int64, start::Int64)
       threadid = Threads.threadid()
