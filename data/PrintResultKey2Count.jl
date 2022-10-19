@@ -82,7 +82,7 @@ function execute()
 
     global resultKeysSorted = sort!(collect(keys(resultKey2Counts)))
     global totalCount = sum(collect(values(resultKey2Counts)))
-    print(totalCount)
+    println(totalCount)
 
     global resultKey2CountCsv = Vector{String}()
     global resultKey2ProbCsv = Vector{String}()
