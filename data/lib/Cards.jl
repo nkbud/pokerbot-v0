@@ -29,4 +29,17 @@ module Cards
         return allDeals
     end
 
+    function getAllDealKeys()
+        allCards = getFullDeck()
+        allDealKeys = Vector{String}()
+        for i in 1:51
+            for j in (i+1):52
+                card1 = allCards[i]
+                card2 = allCards[j]
+                dealKey = input2HandKey("$card1 $card2")
+                push!(allDealKeys, dealKey)
+            end
+        end
+        return allDealKeys
+    end
 end
