@@ -1,6 +1,7 @@
 module HandKeys
 
     export input2HandKey
+    export getCommunityKey
 
     suits = [
         'a',
@@ -38,6 +39,10 @@ module HandKeys
             push!(translatedCards, newKind * suits[foundIndex])
         end
         return translatedCards
+    end
+
+    function getCommunityKey(input::String)::String
+        return join(sort(translateCards(split(input, " ")), alg=InsertionSort))
     end
     
     function input2HandKey(input::String)::String

@@ -1,20 +1,18 @@
+
 using JSON
-using DelimitedFiles
 using Dates
+import Base.Threads.@spawn
 
 include("lib/HandKeys.jl")
-include("lib/Logs.jl")
 include("lib/Cards.jl")
+include("lib/ResultKeys.jl")
+include("lib/Logs.jl")
+
+using .ResultKeys
 using .HandKeys
 using .Logs
-using .Cards
 
-# given some community cards: (12345)
 
-# given some hero cards: (67)
-
-# 12345.csv
-# (heroCards),(resultKey),(count)
 
 function extractAllCommunities()
 
@@ -64,7 +62,6 @@ function extractAllCommunities()
             end
         end
     end
-    
     open("./archive/community/flop2HerosCount.json", "w") do io
         write(io, JSON.json(flop2Heros))
     end
@@ -76,5 +73,29 @@ function extractAllCommunities()
     end
 end
 
+function execute()
+  
+  dealKeys2CardIndices = collect(getDealKeys2CardIndices())
+  total = length(dealKeys2CardIndices)
+  count = 0
+  stamp = Dates.value(Dates.now())
+  allCards = getFullDeck()
+
+  Threads.@threads for i = eachindex(dealKeys2CardIndices)
+    
+    dealKey = dealKeys2CardIndices[i][1]
+    dealStrings = dealKeys2CardIndices[i][2]
+    
+    @time printHandKeyTree2Json(dealKey, dealStrings, allCards)
+
+    count += 1
+    Logs.log(count, total, stamp)
+  end
+end
+
+
 mkpath("./archive/community")
-extractAllCommunities()
+numThreads = Threads.nthreads()
+println("Spreading work over $numThreads threads")
+@time execute()
+
