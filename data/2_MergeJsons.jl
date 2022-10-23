@@ -48,26 +48,20 @@ function executeMerge()
 
     dealKeys = sort(collect(keys(getDealKeys2CardIndices())))
     dirs = [
-        "hero2ResultCounts",
         "flop2HeroResultCounts",
         "turn2HeroResultCounts",
         "river2HeroResultCounts"
     ]
     root = "./outputs/"
 
-    total = 4
+    total = length(dirs)
     count = 0
     stamp = Dates.value(Dates.now())
 
     for dir in dirs
         self = JSON.parsefile(root * dir * "/" * dealKeys[1] * ".json")
         for dealKey in dealKeys[2:end]
-            other = JSON.parsefile(root * dir * "/" * dealKey * ".json")
-            if startswith(dir, "hero2ResultCounts")
-                merge!(+, self, other)
-            else
-                merge2!(self, other)
-            end
+            merge2!(self, JSON.parsefile(root * dir * "/" * dealKey * ".json"))
         end
 
         count += 1
@@ -75,45 +69,14 @@ function executeMerge()
 
         newDir = root * "Merged"
         mkpath(newDir)
-        newFile = newDir * "/" * dir * ".json"
-        open(newFile, "w") do io
-            write(io, JSON.json(self))
+        for (community, heroDict) in self
+            newFile = newDir * "/" * community * ".json"
+            open(newFile, "w") do io
+                write(io, JSON.json(heroDict))
+            end
         end
-        # replace self with probs, re-write
-        # if startswith(dir, "hero2ResultCounts")
-        #     count2ProbDist!(self)
-        # else
-        #     totalCount = float(0)
-        #     for dict in values(self)
-        #         for dict2 in values(dict)
-        #             totalCount += sum(values(dict2))
-        #         end
-        #     end
-        #     for (comm, heroDict) in self
-        #         for (hero, resultDict) in heroDict
-        #             count2ProbDist!(resultDict)
-        #         end
-        #     end
-        # end
-        # newDir = root * "MergedProb"
-        # mkpath(newDir)
-        # newFile = newDir * "/" * dir * ".json"
-        # open(newFile, "w") do io
-        #     write(io, JSON.json(self))
-        # end
     end
 end
 
 @time executeMerge()
 
-
-# in the file ({river}.csv)
-cumulativeCount = 0
-lines = Vector{String}()
-for i in sortperm(results)
-    # {hero},{cumulativeProb}
-    hero = heros[i]
-    cumulativeCount += counts[i]
-    cumulativeProb = 1 - (cumulativeCount / totalCount)
-    push!(lines, "$hero,$cumulativeProb")
-end
