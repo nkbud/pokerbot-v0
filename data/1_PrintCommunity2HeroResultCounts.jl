@@ -128,15 +128,3 @@ module Community2HeroCount
         end
     end
 end
-
-mkpath("./outputs")
-mkpath("./outputs/hero2ResultCounts")
-mkpath("./outputs/flop2HeroResultCounts")
-mkpath("./outputs/turn2HeroResultCounts")
-mkpath("./outputs/river2HeroResultCounts")
-
-numThreads = Threads.nthreads()
-println("Spreading work over $numThreads threads")
-@time Community2HeroCount.executeCommunity2HeroResultCount()
-println()
-println("Stage 1 Complete.")

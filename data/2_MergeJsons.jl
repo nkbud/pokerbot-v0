@@ -68,6 +68,3 @@ module MergeJsons
         end
     end
 end
-
-@time executeMerge()
-
