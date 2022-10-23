@@ -112,7 +112,7 @@ module ResultKeys
         end
         for kinds in suitKinds
             if length(kinds) >= 5
-                return join(sort(Vector{Char}(kinds)))
+                return join(sort(Vector{Char}(kinds))[1:5])
             end
         end
         return ""

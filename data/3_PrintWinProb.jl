@@ -13,10 +13,8 @@ function getResultKey2Count(river, heroCounts)
 
     heros = collect(keys(heroCounts))
     counts = collect(values(heroCounts))
-    results = Vector{String}()
-    for hero in heros
-        push!(results, findResultKey(river * hero))
-    end
+    
+
     totalCount = float(sum(counts))
 
     # in the file ({river}.csv)
