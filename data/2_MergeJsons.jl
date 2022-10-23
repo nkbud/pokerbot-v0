@@ -1,34 +1,73 @@
+using JSON
+using Dates
+import Base.Threads.@spawn
 
+include("lib/HandKeys.jl")
+include("lib/ResultKeys.jl")
+include("lib/Logs.jl")
+using .ResultKeys
+using .HandKeys
+using .Logs
+
+
+function mergeLayeredDicts(dicts::Vector{Dict{String, Any}})
+    merged = dicts[1]
+    for dict in dicts[2:end]
+        for (comm, heroDict) in dict
+            if ! haskey(merged, comm)
+                merged[comm] = heroDict
+                continue
+            end
+            for (hero, resultDict) in heroDict
+                if ! haskey(merged[comm], hero)
+                    merged[comm][hero] = resultDict
+                    continue
+                end
+                for (result, count) in resultDict
+                    if ! haskey(merged[comm][hero], result)
+                        merged[comm][hero][result] = count
+                    else
+                        merged[comm][hero][result] += count
+                    end
+                end
+            end
+        end
+    end
+    return merged
+end
 
 function mergeJsons(dirs::Vector{String}, filenames::Vector{String}, mergeId::Int)
 
     for dir in dirs
-        community2HeroResultCount = JSON.parsefile(dir * "/" * filenames[1] * ".json")
-        for file in filenames[2:end]
-            merge(+, community2HeroResultCount, JSON.parsefile(dir * "/" * file * ".json"))
+        dicts = collect(map(filename -> JSON.parsefile(dir * "/" * filename * ".json"), filenames))
+        if dir == "./outputs/hero2ResultCounts"
+            merged = merge(+, dicts...)
+        else
+            merged = mergeLayeredDicts(dicts)
         end
+        
         newDir = dir * "Merged"
         mkpath(newDir)
         newFile = newDir * "/" * string(mergeId) * ".json"
         open(newFile, "w") do io
-            write(io, JSON.json(community2HeroResultCount))
+            write(io, JSON.json(merged))
         end
     end
 end
 
 function executeMerge()
 
-    const dealKeys = sort(collect(keys(getDealKeys2CardIndices())))
-    const dirs = [
-        "./outputs/deal2HeroResultCounts",
+    dealKeys = sort(collect(keys(getDealKeys2CardIndices())))
+    dirs = [
+        "./outputs/hero2ResultCounts",
         "./outputs/flop2HeroResultCounts",
         "./outputs/turn2HeroResultCounts",
         "./outputs/river2HeroResultCounts"
     ]
 
-    const total = 13
+    total = 13
     count = 0
-    const stamp = Dates.value(Dates.now())
+    stamp = Dates.value(Dates.now())
   
     Threads.@threads for i = 1:13
         
