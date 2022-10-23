@@ -11,6 +11,7 @@ module MergeJsons
     using .HandKeys
     using .Logs
 
+    export executeMerge
 
     function merge2!(self::Dict{String, Any}, other::Dict{String, Any})
         for (comm, heroDict) in other

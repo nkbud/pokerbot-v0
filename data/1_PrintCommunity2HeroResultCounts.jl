@@ -11,6 +11,8 @@ module Community2HeroCount
     using .HandKeys
     using .Logs
 
+    export executeCommunity2HeroResultCount
+
     function printCommunity2HeroResultCount(dealKey2CardIndices::Pair{String, Vector{String}}, allCards::Vector{String})
 
         # dict["result"] = count
