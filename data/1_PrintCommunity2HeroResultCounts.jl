@@ -13,6 +13,12 @@ module Community2HeroCount
 
     export executeCommunity2HeroResultCount
 
+    function parseFlopString(flopString::String)
+        heroCards = split(obj, " ")[1:2]
+        remainingIndices = filter(x -> !( x in indices ), 1:52)
+        return join(heroCards, " "), remainingIndices
+    end
+
     function printCommunity2HeroResultCount(dealKey2CardIndices::Pair{String, Vector{String}}, allCards::Vector{String})
 
         # dict["result"] = count
@@ -23,17 +29,21 @@ module Community2HeroCount
         turn2HeroResultCount = Dict{String, Dict{String, Dict{String, Int32}}}()
         river2HeroResultCount = Dict{String, Dict{String, Dict{String, Int32}}}()
 
+        len1 = 50  # removing 2 hero cards
+        len2 = 47  # removing 3 flop cards
+        len3 = 46  # removing 1 turn card
+
         dealKey = dealKey2CardIndices[1]
         dealStrings = dealKey2CardIndices[2]
         for dealString in dealStrings
             heroCards, remainingIndices = parseDealString(dealString)
 
             # flop
-            for c in 1:46
+            for c in 1:len1
                 cs = allCards[remainingIndices[c]]
-                for d in (c+1):47
+                for d in (c+1):len1
                     ds = allCards[remainingIndices[d]]
-                    for e in (d+1):48
+                    for e in (d+1):len1
                         es = allCards[remainingIndices[e]]
                         flopCards = "$heroCards $cs $ds $es"
                         flopKey = input2HandKey(flopCards)
@@ -42,10 +52,12 @@ module Community2HeroCount
                         if ! haskey(flop2HeroResultCount, flopComm)
                             flop2HeroResultCount[flopComm] = Dict{String, Dict{String, Int32}}()
                         end
+
+                        remainingIndices2 = filter(x -> !(x in [c, d, e]), remainingIndices)
         
                         # turn
-                        for f in (e+1):49
-                            fs = allCards[remainingIndices[f]]
+                        for f in 1:len2
+                            fs = allCards[remainingIndices2[f]]
                             turnCards = "$flopCards $fs"
                             turnKey = input2HandKey(turnCards)
                             turnComm = turnKey[1:8]
@@ -53,10 +65,12 @@ module Community2HeroCount
                             if ! haskey(turn2HeroResultCount, turnComm)
                                 turn2HeroResultCount[turnComm] = Dict{String, Dict{String, Int32}}()
                             end
+
+                            remainingIndices3 = filter(x -> x != f, remainingIndices2)
                             
                             # river
-                            for g in (f+1):50
-                                gs = allCards[remainingIndices[g]]
+                            for g in 1:len3
+                                gs = allCards[remainingIndices3[g]]
                                 riverKey = input2HandKey("$turnCards $gs")
                                 riverComm = riverKey[1:10]
                                 riverHero = riverKey[11:end]

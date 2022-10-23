@@ -36,7 +36,7 @@ module ResultKeys
         end
         suitedKindsSorted = join(sort(Vector{Char}(suitedKinds)))
         seqSize = 1
-        for i in 2:length(suitedKindsSorted)
+        for i in 2:lastindex(suitedKindsSorted)
             kind1 = suitedKindsSorted[i-1]
             kind2 = suitedKindsSorted[i]
             if kind1 == kind2
@@ -139,7 +139,7 @@ module ResultKeys
         getHighCard
     ]
     function findResultKey(searchKey::String)::String
-        for i in 1:length(rankKeys)
+        for i in 1:lastindex(rankKeys)
             result = rankKeys[i](searchKey)
             if result != ""
                 return "$i$result"

@@ -12,6 +12,7 @@ module MergeJsons
     using .Logs
 
     export executeMerge
+    export merge2!
 
     function merge2!(self::Dict{String, Any}, other::Dict{String, Any})
         for (comm, heroDict) in other
