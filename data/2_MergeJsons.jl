@@ -32,18 +32,6 @@ function merge2!(self::Dict{String, Any}, other::Dict{String, Any})
     end
 end
 
-function count2ProbDist!(dict::Dict{String, Any})
-    results = collect(keys(dict))
-    counts = collect(values(dict))
-    totalCount = float(sum(counts))
-    countSoFar = 0
-    for i in sortperm(results)
-        countSoFar += counts[i]
-        probWinSoFar = 1 - (countSoFar / totalCount)
-        dict[results[i]] = probWinSoFar
-    end
-end
-
 function executeMerge()
 
     dealKeys = sort(collect(keys(getDealKeys2CardIndices())))

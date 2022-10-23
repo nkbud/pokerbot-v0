@@ -4,6 +4,7 @@ module HandKeys
     export getCommunityKey
     export getDealKeys2CardIndices
     export parseDealString
+    export getFullDeck
 
     function getFullDeck()::Vector{String}
         kinds = ['2', '3', '4', '5', '6', '7', '8', '9', 't', 'j', 'q', 'k', 'a']

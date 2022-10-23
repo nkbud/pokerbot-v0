@@ -31,3 +31,16 @@ using .ResultKeys
 # open(newFile, "w") do io
 #     write(io, JSON.json(self))
 # end
+
+
+# function count2ProbDist!(dict::Dict{String, Any})
+#     results = collect(keys(dict))
+#     counts = collect(values(dict))
+#     totalCount = float(sum(counts))
+#     countSoFar = 0
+#     for i in sortperm(results)
+#         countSoFar += counts[i]
+#         probWinSoFar = 1 - (countSoFar / totalCount)
+#         dict[results[i]] = probWinSoFar
+#     end
+# end
