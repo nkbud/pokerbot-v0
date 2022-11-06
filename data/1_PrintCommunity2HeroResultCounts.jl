@@ -29,9 +29,7 @@ module Community2HeroCount
         turn2HeroResultCount = Dict{String, Dict{String, Dict{String, Int32}}}()
         river2HeroResultCount = Dict{String, Dict{String, Dict{String, Int32}}}()
 
-        len1 = 50  # removing 2 hero cards
-        len2 = 47  # removing 3 flop cards
-        len3 = 46  # removing 1 turn card
+        len = 50  # removing 2 hero cards
 
         dealKey = dealKey2CardIndices[1]
         dealStrings = dealKey2CardIndices[2]
@@ -39,11 +37,11 @@ module Community2HeroCount
             heroCards, remainingIndices = parseDealString(dealString)
 
             # flop
-            for c in 1:len1
+            for c in 1:(len-2)
                 cs = allCards[remainingIndices[c]]
-                for d in (c+1):len1
+                for d in (c+1):(len-1)
                     ds = allCards[remainingIndices[d]]
-                    for e in (d+1):len1
+                    for e in (d+1):len
                         es = allCards[remainingIndices[e]]
                         flopCards = "$heroCards $cs $ds $es"
                         flopKey = input2HandKey(flopCards)
@@ -52,11 +50,12 @@ module Community2HeroCount
                         if ! haskey(flop2HeroResultCount, flopComm)
                             flop2HeroResultCount[flopComm] = Dict{String, Dict{String, Int32}}()
                         end
-
-                        remainingIndices2 = filter(x -> !(x in [c, d, e]), remainingIndices)
         
                         # turn
-                        for f in 1:len2
+                        for f in 1:len
+                            if f == c || f == d || f == e
+                                continue
+                            end
                             fs = allCards[remainingIndices2[f]]
                             turnCards = "$flopCards $fs"
                             turnKey = input2HandKey(turnCards)
@@ -66,10 +65,11 @@ module Community2HeroCount
                                 turn2HeroResultCount[turnComm] = Dict{String, Dict{String, Int32}}()
                             end
 
-                            remainingIndices3 = filter(x -> x != f, remainingIndices2)
-                            
                             # river
-                            for g in 1:len3
+                            for g in 1:len
+                                if g == c || g == d || g == e || g == f
+                                    continue
+                                end
                                 gs = allCards[remainingIndices3[g]]
                                 riverKey = input2HandKey("$turnCards $gs")
                                 riverComm = riverKey[1:10]
