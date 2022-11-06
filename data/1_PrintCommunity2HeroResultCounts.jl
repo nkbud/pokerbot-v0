@@ -56,7 +56,7 @@ module Community2HeroCount
                             if f == c || f == d || f == e
                                 continue
                             end
-                            fs = allCards[remainingIndices2[f]]
+                            fs = allCards[remainingIndices[f]]
                             turnCards = "$flopCards $fs"
                             turnKey = input2HandKey(turnCards)
                             turnComm = turnKey[1:8]
@@ -70,7 +70,7 @@ module Community2HeroCount
                                 if g == c || g == d || g == e || g == f
                                     continue
                                 end
-                                gs = allCards[remainingIndices3[g]]
+                                gs = allCards[remainingIndices[g]]
                                 riverKey = input2HandKey("$turnCards $gs")
                                 riverComm = riverKey[1:10]
                                 riverHero = riverKey[11:end]
