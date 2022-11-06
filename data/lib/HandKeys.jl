@@ -2,7 +2,7 @@ module HandKeys
 
     export input2HandKey
     export getCommunityKey
-    export getDealKeys2CardIndices
+    export getAllHeroCardsAndIndices
     export parseDealString
     export getFullDeck
 
@@ -19,27 +19,15 @@ module HandKeys
         return cards
     end
 
-    function getDealKeys2CardIndices()
+    function getAllHeroCardsAndIndices()
         allCards = getFullDeck()
-        dealKeys2CardIndices = Dict{String, Vector{String}}()
+        heroCardsAndIndices = Vector{Tuple{String, Tuple{Int64, Int64}}}()
         for i in 1:51
             for j in (i+1):52
-                heroCards = "$(allCards[i]) $(allCards[j])"
-                dealKey = input2HandKey(heroCards)
-                if ! haskey(dealKeys2CardIndices, dealKey)
-                    dealKeys2CardIndices[dealKey] = Vector{String}()
-                end
-                push!(dealKeys2CardIndices[dealKey], "$heroCards $i $j")
+                push!(heroCardsAndIndices, (allCards[i] * allCards[j], (i, j)))
             end
         end
-        return dealKeys2CardIndices
-    end
-
-    function parseDealString(obj::String)
-        indices = map(x -> parse(Int32, x), split(obj, " ")[3:4])
-        heroCards = split(obj, " ")[1:2]
-        remainingIndices = filter(x -> !( x in indices ), 1:52)
-        return join(heroCards, " "), remainingIndices
+        return heroCardsAndIndices
     end
 
     suits = [
@@ -63,34 +51,42 @@ module HandKeys
         '3' => 'L',
         '2' => 'M',
     )
-    function translateCards(cards)::Vector{String}
-        translatedCards = []
-        seenSuits = []
-        for card in cards
-            newKind = kinds[card[1]]
-            # does this suit have a mapping? 
-            foundIndex = findfirst(x -> x == card[2], seenSuits)
-            # if not, map it
-            if foundIndex === nothing
-                push!(seenSuits, card[2])
-                foundIndex = length(seenSuits)
+    function getKind(kind::Char)
+        return kinds[kind]
+    end
+    function getSuit!(seenSuits::Vector{Char}, suit::Char)
+        len = length(seenSuits)
+        if len > 0
+            for i in 1:len
+                if seenSuits[i] == suit
+                    return suits[i]
+                end
             end
-            push!(translatedCards, newKind * suits[foundIndex])
         end
-        return translatedCards
+        push!(seenSuits, suit)
+        return suits[len+1]
     end
-
-    function getCommunityKey(input::String)::String
-        return join(sort(translateCards(split(input, " ")), alg=InsertionSort))
-    end
-    
     function input2HandKey(input::String)::String
-        translatedCards = reverse(translateCards(reverse(split(input, " "))))
-        return join(
-            append!(
-                sort(translatedCards[3:end], alg=InsertionSort), 
-                sort(translatedCards[1:2], alg=InsertionSort)
-            )
-        )
+        # translate cards
+        cards = []
+        seenSuits = Vector{Char}()
+        len = length(input)
+    
+        # the community cards
+        for i in 5:2:len
+            push!(cards, getKind(input[i]) * getSuit!(seenSuits, input[i+1]))
+        end
+        # sort 'em 
+        sort!(cards)
+    
+        # translate and push hero cards correctly
+        card1 = getKind(input[1]) * getSuit!(seenSuits, input[2])
+        card2 = getKind(input[3]) * getSuit!(seenSuits, input[4])
+        if card1 < card2
+            push!(cards, card1, card2)
+        else
+            push!(cards, card2, card1)
+        end
+        return join(cards)
     end
 end
